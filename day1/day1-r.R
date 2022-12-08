@@ -5,28 +5,14 @@ library(here)
 input_data <- read_csv(here("day1", "kasia.txt"), skip_empty_rows = FALSE,
                        col_names = c("calories"))
 
-# Parsing
+# Approach 1: mimic Python and create a list of vectors
 
-# Approach 1: add a new column that indicates which elf each load belongs to
-
-list_of_elves <- input_data %>% 
-  mutate(calories = case_when(is.na(calories) ~ "boo",
-                              TRUE ~ as.character(calories))) %>% 
-  pull(calories) %>% 
-  toString() %>% 
-  str_split(pattern = ", boo, ")
-
-df_of_elves <- list_of_elves %>% 
-  unlist() %>% 
-  enframe() %>% 
-  separate(col = value, sep = ", ")
-  mutate(sum_calories = sum(as.numeric(value)))
-
-# Approach 2: mimic Python and create a list of vectors
-
+# Create a vector of numbers
 input_data_vector <- input_data %>% 
   pull(calories)
 
+# Function to create a list of vectors, where each list element represents the 
+# items carried by one elf
 create_elf_bags <- function(elf_collection_vector){
   current_elf_bag <- c()
   elves <- list()
@@ -42,34 +28,31 @@ create_elf_bags <- function(elf_collection_vector){
   return(elves)
 }
 
-
-
-
-
-
+# Apply this function to turn our vector of numbers into a list of vectors
 elf_bags <- create_elf_bags(input_data_vector)
 
-
+# Turn the list into a df, and calculate sum of calories in each elf's bag
 df_elves <-elf_bags %>% 
   enframe() %>%
   rowwise()  %>% 
   mutate(calo_sum = sum(value)) %>%
-  arrange(calo_sum)
+  arrange(calo_sum) # arrange in ascending order
 
+# Find the elf with the most calories in their bag
 largest <- df_elves %>%
   tail(n=1) %>%
   select(calo_sum)
 
+# Find three elves with the most calories in their bags
 largest3 <- df_elves %>%
   tail(n=3) %>%
   pull(calo_sum) %>%
   sum()
-  
-  
 
-demo_data <- c(1, 2, 3, NA, 4, 5, 6, NA, 7, 8)
-df_demo <- data.frame(calory = demo_data)
+# Approach 2: Create a new column in the df to indicate which items belong
+# to each elf
 
+# Function to create a vector with elf numbers corresponding to the items
 create_elf_numbers <- function(elf_collection_vector){
   elf_number <- 1
   all_numbers <- c()
@@ -83,7 +66,29 @@ create_elf_numbers <- function(elf_collection_vector){
   return(all_numbers)
 }
 
+# Apply the function and obtain a vector
 which_elf_number <- create_elf_numbers(input_data$calories)
+
+# Add the new column to the input df
 long_elves <- input_data %>% 
   drop_na() %>% 
   mutate(which_elf = which_elf_number)
+
+# Calculate sum of calories for each elf
+
+elf_calories <- long_elves %>% 
+  group_by(which_elf) %>% 
+  summarise(calorie_sum = sum(calories)) %>% 
+  arrange(desc(calorie_sum)) 
+
+# Pull the calories for top elf
+top_elf <- elf_calories %>% 
+  head(n=1) %>% 
+  pull(calorie_sum)
+
+# Pull the calories for top three elves
+top_three_elves <- elf_calories %>% 
+  head(n=3) %>% 
+  summarise(sum_cal = sum(calorie_sum)) %>% 
+  pull(sum_cal)
+
