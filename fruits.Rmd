@@ -1,0 +1,13 @@
+---
+title: "fruits"
+output: html_document
+---
+
+```{r}
+fruits <- c("banana","kiwi")
+
+fruits <- append(fruits, "plum")
+
+fruits |> toupper()
+```
+
